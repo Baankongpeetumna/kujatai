@@ -36,6 +36,12 @@ int main()
     }
     sf::Sprite startja(start);
 
+    sf::Texture choice;
+    if (!choice.loadFromFile("choice.JPG")) {
+        std::cerr << "Error loading choice.JPG\n";
+    }
+    sf::Sprite choicenaka(choice);
+
     bool inTutorial = false;
     bool isChoosingPlayers = false;
     bool isEnteringNames = false;
@@ -44,8 +50,8 @@ int main()
     int numberOfPlayers = 0;
     std::vector<TextBox> playerNameBoxes;
     std::vector<std::string> playerNames;
-    std::vector<int> playerMoney; // เพิ่มตัวแปรเก็บเงินของผู้เล่น
-    std::vector<std::string> playerMoneyChanges; //เก็บข้อความเงินที่ถูกสุ่ม
+    std::vector<int> playerMoney;
+    std::vector<std::string> playerMoneyChanges;
 
     sf::Font font;
     if (!font.loadFromFile("Rainbow Memories.otf")) {
@@ -53,6 +59,7 @@ int main()
     }
 
     Button nextButton(450, 600, 150, 50, "Next", font);
+    Button backButton(10, 10, 100, 40, "Back", font);
     Button threePlayerButton(375, 300, 100, 50, "3", font);
     Button fourPlayerButton(500, 300, 100, 50, "4", font);
     Button fivePlayerButton(625, 300, 100, 50, "5", font);
@@ -61,14 +68,14 @@ int main()
 
     auto createPlayerNameBoxes = [&](int numberOfPlayers) {
         playerNameBoxes.clear();
-        playerMoney.assign(numberOfPlayers, 50000); // เงินเริ่มต้น 
+        playerMoney.assign(numberOfPlayers, 50000);
         float startY = 200;
         for (int i = 0; i < numberOfPlayers; ++i) {
             TextBox box(400, startY + i * 60, 200, 40);
             box.setFont(font);
             playerNameBoxes.push_back(box);
         }
-        };
+    };
 
     while (window.isOpen())
     {
@@ -93,18 +100,24 @@ int main()
                         isChoosingPlayers = false;
                         isEnteringNames = true;
                     }
-                }
-                else if (isEnteringNames && nextButton.isClicked(mousePos)) {
-                    playerNames.clear();
-                    for (const auto& box : playerNameBoxes) {
-                        playerNames.push_back(box.getText());
+                    if (backButton.isClicked(mousePos)) {
+                        isChoosingPlayers = false;
+                        menu.show(); // กลับไปหน้าเมนูหลัก
                     }
-
-                    // สุ่มเงินและอัปเดตเงิน
-                    randMoney(playerMoney, playerMoneyChanges);
-
-                    isEnteringNames = false;
-                    isInStartScreen = true;
+                }
+                else if (isEnteringNames) {
+                    if (nextButton.isClicked(mousePos)) {
+                        playerNames.clear();
+                        for (const auto& box : playerNameBoxes) {
+                            playerNames.push_back(box.getText());
+                        }
+                        randMoney(playerMoney, playerMoneyChanges);
+                        isEnteringNames = false;
+                        isInStartScreen = true;
+                    } else if (backButton.isClicked(mousePos)) {
+                        isEnteringNames = false;
+                        isChoosingPlayers = true; // กลับไปหน้าเลือกจำนวนผู้เล่น
+                    }
                 }
                 else if (menu.IsBackClicked(window)) {
                     inTutorial = false;
@@ -151,6 +164,7 @@ int main()
             threePlayerButton.draw(window);
             fourPlayerButton.draw(window);
             fivePlayerButton.draw(window);
+            backButton.draw(window);
         }
         else if (isEnteringNames) {
             window.draw(kornplays);
@@ -158,14 +172,12 @@ int main()
                 box.draw(window);
             }
             nextButton.draw(window);
+            backButton.draw(window);
         }
         else if (isInStartScreen) {
             window.draw(startja);
-
             float startY = 10;
             float startX = 10;
-
-            //  แสดงชื่อและเงิน
             for (size_t i = 0; i < playerMoneyChanges.size(); ++i) {
                 sf::Text playerText;
                 playerText.setFont(font);
@@ -180,9 +192,7 @@ int main()
             window.draw(background);
             menu.draw(window);
         }
-
         window.display();
     }
-
     return 0;
 }
