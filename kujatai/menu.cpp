@@ -92,3 +92,20 @@ bool Menu::IsBackClicked(sf::RenderWindow& window)
 int Menu::GetItemCount() {
     return MAX_ITEM;
 }
+
+bool menuVisible = true; // เก็บสถานะของเมนู
+
+void Menu::hide() {
+    menuVisible = false;
+}
+
+void Menu::show() {
+    menuVisible = true;
+}
+
+bool Menu::isVisible() {
+    return menuVisible;
+}
+
+
+

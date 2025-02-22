@@ -1,100 +1,72 @@
 ﻿#include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <iostream>
+#include <vector>
 #include "Menu.h"
 #include "TextBox.h"
+#include "Button.h"
+#include "game.h" 
 
 int main()
 {
     sf::RenderWindow window(sf::VideoMode({ 1080, 720 }), "Hahahahha");
     Menu menu(window.getSize().x, window.getSize().y);
 
-    // โหลดพื้นหลัง
     sf::Texture texture;
     if (!texture.loadFromFile("mon.png")) {
-        std::cerr << "Error loading Rush.png\n";
+        std::cerr << "Error loading mon.png\n";
     }
-    sf::Sprite background;
-    background.setTexture(texture);
+    sf::Sprite background(texture);
 
-    // โหลด Tutorial (top)
     sf::Texture tot;
     if (!tot.loadFromFile("tuto.png")) {
-        std::cerr << "Error loading tot.png\n";
+        std::cerr << "Error loading tuto.png\n";
     }
-    sf::Sprite top;
-    top.setTexture(tot);
+    sf::Sprite top(tot);
 
-    // หน้า play
-    sf::Texture pl;
-    if (!pl.loadFromFile("pl.JPG")) {
-        std::cerr << "Error loading kuay.png\n";
+    sf::Texture kornpl;
+    if (!kornpl.loadFromFile("BGja.JPEG")) {
+        std::cerr << "Error loading BGja.JPEG\n";
     }
-    sf::Sprite plays;
-    plays.setTexture(pl);
+    sf::Sprite kornplays(kornpl);
 
-    bool inTutorial = false; // โหมดแสดงหน้า Tutorial
-    bool gameRunning = false; // เช็คสถานะการเล่นเกม
-    bool isChoosingPlayers = false; // ตรวจสอบว่าอยู่ในโหมดเลือกจำนวนผู้เล่นหรือไม่
-    bool isEnteringNames = false;  // ตัวแปรสำหรับการกรอกชื่อ
-    bool isInPlayScreen = false; // ตัวแปรเพื่อเช็คว่าอยู่ในหน้า Play หรือไม่
+    sf::Texture start;
+    if (!start.loadFromFile("startska.JPG")) {
+        std::cerr << "Error loading startska.JPG\n";
+    }
+    sf::Sprite startja(start);
 
-    // ตัวเลือกจำนวนผู้เล่น
-    int numberOfPlayers = 0; // ตัวแปรเก็บจำนวนผู้เล่นที่เลือก
+    bool inTutorial = false;
+    bool isChoosingPlayers = false;
+    bool isEnteringNames = false;
+    bool isInStartScreen = false;
 
-    // สร้าง TextBox สำหรับกรอกชื่อผู้เล่น
-    std::vector<TextBox> playerNameBoxes; // เก็บ TextBox สำหรับกรอกชื่อผู้เล่น
-    std::vector<std::string> playerNames;  // เก็บชื่อผู้เล่น
+    int numberOfPlayers = 0;
+    std::vector<TextBox> playerNameBoxes;
+    std::vector<std::string> playerNames;
+    std::vector<int> playerMoney; // เพิ่มตัวแปรเก็บเงินของผู้เล่น
+    std::vector<std::string> playerMoneyChanges; //เก็บข้อความเงินที่ถูกสุ่ม
 
-    bool isNameEntered = false;  // ตัวแปรเช็คว่าผู้เล่นกรอกชื่อเสร็จแล้วหรือไม่
+    sf::Font font;
+    if (!font.loadFromFile("Rainbow Memories.otf")) {
+        std::cerr << "Error loading font\n";
+    }
 
-    // ฟังก์ชันนี้จะถูกเรียกเมื่อจำนวนผู้เล่นได้รับการเลือก
-    auto createPlayerNameBoxes = [&](int numberOfPlayers, const sf::Font& font) {
-        playerNameBoxes.clear();  // ล้าง TextBox เก่าก่อน
+    Button nextButton(450, 600, 150, 50, "Next", font);
+    Button threePlayerButton(375, 300, 100, 50, "3", font);
+    Button fourPlayerButton(500, 300, 100, 50, "4", font);
+    Button fivePlayerButton(625, 300, 100, 50, "5", font);
 
-        float startY = 200;  // ตั้งตำแหน่งเริ่มต้นของ TextBox ให้ห่างกันพอสมควร
+    bool showNextButton = false;
+
+    auto createPlayerNameBoxes = [&](int numberOfPlayers) {
+        playerNameBoxes.clear();
+        playerMoney.assign(numberOfPlayers, 50000); // เงินเริ่มต้น 
+        float startY = 200;
         for (int i = 0; i < numberOfPlayers; ++i) {
-            // สร้าง TextBox ใหม่ให้กับผู้เล่น
-            TextBox box(400, startY + i * 60, 200, 40);  // ปรับตำแหน่งตามความเหมาะสม
+            TextBox box(400, startY + i * 60, 200, 40);
             box.setFont(font);
-            playerNameBoxes.push_back(box);  // เพิ่มลงในเวกเตอร์
-        }
-        };
-
-    // ฟังก์ชันเลือกจำนวนผู้เล่น
-    auto showPlayerSelection = [&](const sf::Font& font) {
-        std::vector<std::string> playerOptions = { "1 Player", "2 Players", "3 Players", "4 Players" };
-        float startY = 150;
-        for (int i = 0; i < playerOptions.size(); ++i) {
-            sf::Text optionText(playerOptions[i], font, 30);
-            optionText.setFillColor(sf::Color::Black);
-            optionText.setPosition(400, startY + i * 60);
-            window.draw(optionText);
-            if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
-                sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-                if (optionText.getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos))) {
-                    numberOfPlayers = i + 1;  // กำหนดจำนวนผู้เล่นตามตัวเลือก
-                    createPlayerNameBoxes(numberOfPlayers, font); // สร้าง TextBox ตามจำนวนผู้เล่น
-                    isEnteringNames = true; // เปลี่ยนไปหน้าจอกรอกชื่อ
-                    isChoosingPlayers = false; // เปลี่ยนโหมดไม่อยู่ในโหมดเลือกจำนวนผู้เล่นแล้ว
-                    isInPlayScreen = true; // เปลี่ยนไปยังหน้าจอ Play
-                }
-            }
-        }
-        };
-
-    // ฟังก์ชันสำหรับการกลับไปที่หน้าจอหลัก
-    auto handleBackButton = [&]() {
-        if (menu.IsBackClicked(window)) {
-            if (isInPlayScreen) {
-                isInPlayScreen = false; // กลับไปที่หน้าเลือกจำนวนผู้เล่น
-                isEnteringNames = false; // ล้างข้อมูลกรอกชื่อ
-                playerNameBoxes.clear();
-            }
-            else {
-                // ถ้าอยู่ในหน้าเมนูหลัก
-                isChoosingPlayers = false; // กลับไปที่เมนูหลัก
-            }
+            playerNameBoxes.push_back(box);
         }
         };
 
@@ -109,115 +81,107 @@ int main()
 
             if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Left)
             {
-                if (inTutorial) // ถ้าอยู่ในหน้าต่าง Tutorial
-                {
-                    if (menu.IsBackClicked(window)) {
-                        inTutorial = false; // กลับไปที่เมนูหลัก
+                sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+
+                if (isChoosingPlayers) {
+                    if (threePlayerButton.isClicked(mousePos)) numberOfPlayers = 3;
+                    else if (fourPlayerButton.isClicked(mousePos)) numberOfPlayers = 4;
+                    else if (fivePlayerButton.isClicked(mousePos)) numberOfPlayers = 5;
+
+                    if (numberOfPlayers > 0) {
+                        createPlayerNameBoxes(numberOfPlayers);
+                        isChoosingPlayers = false;
+                        isEnteringNames = true;
                     }
                 }
-                else if (gameRunning) // ถ้าอยู่เล่นเกม
-                {
-                    if (menu.IsBackClicked(window)) {
-                        gameRunning = false; // กลับไปที่เมนูหลัก
+                else if (isEnteringNames && nextButton.isClicked(mousePos)) {
+                    playerNames.clear();
+                    for (const auto& box : playerNameBoxes) {
+                        playerNames.push_back(box.getText());
                     }
+
+                    // สุ่มเงินและอัปเดตเงิน
+                    randMoney(playerMoney, playerMoneyChanges);
+
+                    isEnteringNames = false;
+                    isInStartScreen = true;
                 }
-                else if (isChoosingPlayers) // ถ้าอยู่ในโหมดเลือกจำนวนผู้เล่น
-                {
-                    showPlayerSelection(menu.getFont()); // เรียกการเลือกจำนวนผู้เล่น
+                else if (menu.IsBackClicked(window)) {
+                    inTutorial = false;
+                    isChoosingPlayers = false;
+                    isEnteringNames = false;
+                    isInStartScreen = false;
+                    menu.show();
                 }
-                else // ถ้าอยู่ในเมนูหลัก
-                {
-                    for (int i = 0; i < menu.GetItemCount(); ++i)
-                    {
-                        if (menu.IsMouseOver(window, i)) // ตรวจสอบว่าคลิกที่ปุ่มไหน
-                        {
+                else if (!(isChoosingPlayers || isEnteringNames || inTutorial || isInStartScreen)) {
+                    for (int i = 0; i < menu.GetItemCount(); ++i) {
+                        if (menu.IsMouseOver(window, i)) {
                             switch (i)
                             {
-                            case 0: // ปุ่ม Play
-                                std::cout << "Play has been pressed" << std::endl;
-                                isChoosingPlayers = true;  // เริ่มโหมดเลือกจำนวนผู้เล่น
+                            case 0:
+                                isChoosingPlayers = true;
+                                menu.hide();
                                 break;
-                            case 1: // ปุ่ม Tutorial
-                                inTutorial = true; // ไปหน้า tutorial
+                            case 1:
+                                inTutorial = true;
+                                menu.hide();
                                 break;
-                            case 2: // ปุ่ม Exit
-                                window.close(); // ปิด
+                            case 2:
+                                window.close();
                                 break;
                             }
                         }
                     }
                 }
             }
-        }
 
-        // ถ้าอยู่ในหน้า "กรอกชื่อ" ให้รับข้อมูลจาก TextBox
-        if (isInPlayScreen) {
-            for (auto& box : playerNameBoxes) {
-                box.handleEvent(event);  // รับเหตุการณ์จาก TextBox ของผู้เล่น
-            }
-
-            // อัพเดตชื่อผู้เล่น
-            playerNames.clear();
-            for (auto& box : playerNameBoxes) {
-                playerNames.push_back(box.getInput());  // รับข้อมูลชื่อจาก TextBox
-            }
-        }
-
-        // วาด UI
-        window.clear();
-        if (inTutorial)
-        {
-            window.draw(top); // วาดหน้าจอ tutorial
-            menu.drawBack(window); // แสดงปุ่ม Back
-        }
-        else if (gameRunning)
-        {
-            window.draw(plays); // วาดหน้าจอเกม
-            menu.drawBack(window); // แสดงปุ่ม Back ถ้าต้องการ
-
-            // แสดง TextBox ให้ผู้ใช้กรอกชื่อ
-            for (auto& box : playerNameBoxes) {
-                box.draw(window); // วาด TextBox
-            }
-
-            // แสดงข้อความชื่อผู้เล่น
-            for (size_t i = 0; i < playerNames.size(); ++i) {
-                if (!playerNames[i].empty()) {
-                    sf::Text playerText;
-                    playerText.setString("Player " + std::to_string(i + 1) + ": " + playerNames[i]);
-                    playerText.setFont(menu.getFont());
-                    playerText.setCharacterSize(30);
-                    playerText.setFillColor(sf::Color::Black);
-                    playerText.setPosition(200, 360 + i * 50);  // กำหนดตำแหน่งของข้อความ
-
-                    window.draw(playerText);  // วาดข้อความในหน้าจอ
+            if (isEnteringNames) {
+                for (auto& box : playerNameBoxes) {
+                    box.handleEvent(event);
                 }
             }
-            // แสดงปุ่ม back ในหน้าเกม
-            menu.drawBack(window);
         }
-        else if (isInPlayScreen) {
-            window.draw(plays); // วาดหน้าจอ Play (ใช้ pl.jpg)
-            menu.drawBack(window); // วาดปุ่ม Back
 
-            // แสดง TextBox ให้กรอกชื่อผู้เล่น
+        window.clear();
+        if (inTutorial) {
+            window.draw(top);
+        }
+        else if (isChoosingPlayers) {
+            window.draw(kornplays);
+            threePlayerButton.draw(window);
+            fourPlayerButton.draw(window);
+            fivePlayerButton.draw(window);
+        }
+        else if (isEnteringNames) {
+            window.draw(kornplays);
             for (auto& box : playerNameBoxes) {
-                box.draw(window); // วาด TextBox
+                box.draw(window);
+            }
+            nextButton.draw(window);
+        }
+        else if (isInStartScreen) {
+            window.draw(startja);
+
+            float startY = 10;
+            float startX = 10;
+
+            //  แสดงชื่อและเงิน
+            for (size_t i = 0; i < playerMoneyChanges.size(); ++i) {
+                sf::Text playerText;
+                playerText.setFont(font);
+                playerText.setString(playerNames[i] + " - " + playerMoneyChanges[i]);
+                playerText.setCharacterSize(40);
+                playerText.setFillColor(sf::Color::White);
+                playerText.setPosition(startX, startY + i * 50);
+                window.draw(playerText);
             }
         }
-        else
-        {
-            window.draw(background); // เมนูหลัก
-            menu.draw(window); // วาดเมนู
-
-            // แสดงปุ่มเลือกจำนวนผู้เล่น
-            if (isChoosingPlayers) {
-                showPlayerSelection(menu.getFont()); // แสดงปุ่มเลือกจำนวนผู้เล่น
-                menu.drawBack(window); // วาดปุ่ม Back
-            }
+        else {
+            window.draw(background);
+            menu.draw(window);
         }
 
-        window.display(); // แสดงผล
+        window.display();
     }
 
     return 0;

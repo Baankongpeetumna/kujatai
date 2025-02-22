@@ -19,6 +19,10 @@ public:
     bool IsMouseOver(sf::RenderWindow& window, int index);
     bool IsBackClicked(sf::RenderWindow& window); // เช็คว่าคลิกปุ่ม Back หรือไม่
     int GetItemCount();
+    void hide();  // ซ่อนเมนู
+    void show();  // แสดงเมนู
+    bool isVisible(); // เช็คว่าเมนูแสดงอยู่หรือไม่
+
 
     // ฟังก์ชันนี้จะคืนค่า reference ของ font
     sf::Font& getFont() { return font; }
