@@ -148,6 +148,7 @@
   <ItemGroup>
     <ClInclude Include="button.h" />
     <ClInclude Include="game.h" />
+    <ClInclude Include="gP_2.h" />
     <ClInclude Include="menu.h" />
     <ClInclude Include="textbox.h" />
   </ItemGroup>

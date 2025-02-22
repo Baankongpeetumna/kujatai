@@ -1,11 +1,12 @@
-﻿#include <SFML/Graphics.hpp>
-#include <SFML/Window.hpp>
-#include <iostream>
-#include <vector>
-#include "Menu.h"
-#include "TextBox.h"
-#include "Button.h"
+﻿#include <SFML/Graphics.hpp> 
+#include <SFML/Window.hpp> 
+#include <iostream> 
+#include <vector> 
+#include "Menu.h" 
+#include "TextBox.h" 
+#include "Button.h" 
 #include "game.h" 
+#include "gP_2.h"
 
 int main()
 {
@@ -36,6 +37,11 @@ int main()
     }
     sf::Sprite startja(start);
 
+    StockGraph stockGraph(800, 400);
+    sf::RectangleShape graphArea(sf::Vector2f(800, 400));
+    graphArea.setPosition(140, 150);
+    graphArea.setFillColor(sf::Color::Black);
+
     sf::Texture choice;
     if (!choice.loadFromFile("choice.JPG")) {
         std::cerr << "Error loading choice.JPG\n";
@@ -46,6 +52,10 @@ int main()
     bool isChoosingPlayers = false;
     bool isEnteringNames = false;
     bool isInStartScreen = false;
+    bool isInGraphScreen = false;
+    bool isInChoiceScreen = false; // เพิ่มสถานะสำหรับหน้าของ choice
+
+    bool menuVisible = true;  // เมนูจะแสดงเมื่อเริ่มต้น
 
     int numberOfPlayers = 0;
     std::vector<TextBox> playerNameBoxes;
@@ -59,6 +69,8 @@ int main()
     }
 
     Button nextButton(450, 600, 150, 50, "Next", font);
+    Button graphButton(450, 650, 150, 50, "Show Graph", font);
+    Button proceedButton(450, 700, 150, 50, "Proceed", font);
     Button backButton(10, 10, 100, 40, "Back", font);
     Button threePlayerButton(375, 300, 100, 50, "3", font);
     Button fourPlayerButton(500, 300, 100, 50, "4", font);
@@ -75,7 +87,7 @@ int main()
             box.setFont(font);
             playerNameBoxes.push_back(box);
         }
-    };
+        };
 
     while (window.isOpen())
     {
@@ -99,10 +111,12 @@ int main()
                         createPlayerNameBoxes(numberOfPlayers);
                         isChoosingPlayers = false;
                         isEnteringNames = true;
+                        menuVisible = false;  // ซ่อนเมนูเมื่อเข้าสู่การกรอกชื่อ
                     }
                     if (backButton.isClicked(mousePos)) {
                         isChoosingPlayers = false;
-                        menu.show(); // กลับไปหน้าเมนูหลัก
+                        menu.show();
+                        menuVisible = true;  // แสดงเมนูเมื่อกลับไปยังหน้าเมนูหลัก
                     }
                 }
                 else if (isEnteringNames) {
@@ -114,9 +128,12 @@ int main()
                         randMoney(playerMoney, playerMoneyChanges);
                         isEnteringNames = false;
                         isInStartScreen = true;
-                    } else if (backButton.isClicked(mousePos)) {
+                        menuVisible = false;  // ซ่อนเมนูเมื่อเริ่มเกม
+                    }
+                    else if (backButton.isClicked(mousePos)) {
                         isEnteringNames = false;
                         isChoosingPlayers = true; // กลับไปหน้าเลือกจำนวนผู้เล่น
+                        menuVisible = true;  // แสดงเมนูเมื่อกลับไปยังหน้าเลือกผู้เล่น
                     }
                 }
                 else if (menu.IsBackClicked(window)) {
@@ -124,7 +141,8 @@ int main()
                     isChoosingPlayers = false;
                     isEnteringNames = false;
                     isInStartScreen = false;
-                    menu.show();
+                    menu.show();  // แสดงเมนูหลัก
+                    menuVisible = true;  // แสดงเมนูเมื่อกลับไปหน้าเมนูหลัก
                 }
                 else if (!(isChoosingPlayers || isEnteringNames || inTutorial || isInStartScreen)) {
                     for (int i = 0; i < menu.GetItemCount(); ++i) {
@@ -134,10 +152,12 @@ int main()
                             case 0:
                                 isChoosingPlayers = true;
                                 menu.hide();
+                                menuVisible = false;  // ซ่อนเมนูเมื่อเข้าสู่การเลือกผู้เล่น
                                 break;
                             case 1:
                                 inTutorial = true;
                                 menu.hide();
+                                menuVisible = false;  // ซ่อนเมนูเมื่อเข้าสู่การสอน
                                 break;
                             case 2:
                                 window.close();
@@ -145,6 +165,21 @@ int main()
                             }
                         }
                     }
+                }
+
+                // เพิ่มการตรวจสอบคลิกที่ปุ่ม graphButton
+                if (isInStartScreen && graphButton.isClicked(mousePos)) {
+                    isInGraphScreen = true;
+                    isInStartScreen = false; // เปลี่ยนไปที่หน้ากราฟ
+                    menuVisible = false;  // ซ่อนเมนูเมื่ออยู่ในหน้ากราฟ
+                }
+
+                // ตรวจสอบการคลิกที่ปุ่ม "Next" ในหน้ากราฟ
+                if (isInGraphScreen && nextButton.isClicked(mousePos)) {
+                    // เมื่อกดปุ่ม "Next" เปลี่ยนไปที่หน้า choicenaka
+                    isInGraphScreen = false; // ออกจากหน้ากราฟ
+                    isInChoiceScreen = true; // เปลี่ยนไปยังหน้าของ choice
+                    menuVisible = false;  // ซ่อนเมนูเมื่อไปที่หน้าการเลือก
                 }
             }
 
@@ -156,7 +191,11 @@ int main()
         }
 
         window.clear();
-        if (inTutorial) {
+        if (menuVisible) {
+            window.draw(background);
+            menu.draw(window);  // แสดงเมนูถ้า menuVisible เป็น true
+        }
+        else if (inTutorial) {
             window.draw(top);
         }
         else if (isChoosingPlayers) {
@@ -178,6 +217,8 @@ int main()
             window.draw(startja);
             float startY = 10;
             float startX = 10;
+
+            // แสดงชื่อและเงิน
             for (size_t i = 0; i < playerMoneyChanges.size(); ++i) {
                 sf::Text playerText;
                 playerText.setFont(font);
@@ -187,10 +228,15 @@ int main()
                 playerText.setPosition(startX, startY + i * 50);
                 window.draw(playerText);
             }
+            graphButton.draw(window);
         }
-        else {
-            window.draw(background);
-            menu.draw(window);
+        else if (isInGraphScreen) {
+            window.draw(graphArea);
+            stockGraph.drawGraph(window, graphArea);
+            nextButton.draw(window); // วาดปุ่ม "Next" ในหน้าจอกราฟ
+        }
+        else if (isInChoiceScreen) {
+            window.draw(choicenaka); // วาดหน้า choicenaka เมื่อไปยังหน้าของ choice
         }
         window.display();
     }

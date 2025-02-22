@@ -44,5 +44,8 @@
     <ClInclude Include="button.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="gP_2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
